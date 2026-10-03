@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UtfLens - find hidden and lookalike characters</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; background:#150f22; color:#f4eefa; line-height:1.5; }
+  .wrap { max-width:700px; margin:0 auto; padding:26px 16px 50px; }
+  h1 { font-size:28px; } h1 span { color:#f0abfc; }
+  .sub { color:#b8aac8; margin:6px 0 16px; }
+  .card { background:#221838; border-radius:14px; padding:14px; margin-bottom:12px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px; }
+  label { font-size:12px; color:#b8aac8; display:block; margin-bottom:3px; }
+  input,select { width:100%; background:#150f22; color:#f4eefa; border:1px solid #5a4a70; border-radius:8px; padding:8px; font-size:15px; font-family:inherit; }
+  button { background:#7e3aa8; color:#f4eefa; border:0; padding:8px 14px; border-radius:8px; cursor:pointer; font-size:14px; margin-right:6px; margin-top:10px; }
+  table { width:100%; border-collapse:collapse; } td,th { text-align:left; padding:8px 4px; border-bottom:1px solid #3a2f4d; } th { font-size:12px; color:#b8aac8; font-weight:600; }
+  td.v { font-size:22px; font-weight:800; color:#f0abfc; } tr.me td.v { color:#f4eefa; }
+  .stats { display:flex; gap:22px; flex-wrap:wrap; margin-top:12px; } .stats b { display:block; font-size:20px; } .muted { color:#b8aac8; font-size:13px; }
+  .err { color:#ff9c8a; } .note { font-size:12.5px; color:#8d7fa0; margin-top:6px; }
+
+  td.v { font-size:17px; } td, th { font-size:14px; } .bar { height:10px; background:#150f22; border-radius:6px; overflow:hidden; margin-top:6px; } .bar i { display:block; height:100%; background:#f0abfc; } .bar i.over { background:#ff7b72; } .no { color:#ff9c8a; }
+  .cb { display:inline-flex; align-items:center; gap:4px; margin-right:12px; font-size:14px; color:#f4eefa; } .cb input { width:auto; } .big { font-family:monospace; font-size:26px; font-weight:800; color:#f0abfc; } td.v.m { font-family:monospace; }
+  textarea { width:100%; background:#150f22; color:#f4eefa; border:1px solid #5a4a70; border-radius:8px; padding:8px; font-size:14px; font-family:monospace; min-height:110px; } .ok { color:#86efac; font-weight:700; } .no { color:#ff9c8a; } td.m { font-family:monospace; } .chip { display:inline-block; font-family:monospace; background:#150f22; border-radius:6px; padding:2px 6px; margin:2px 4px 2px 0; }
+  textarea { width:100%; background:#150f22; color:#f4eefa; border:1px solid #5a4a70; border-radius:8px; padding:8px; font-size:13px; font-family:monospace; min-height:130px; } .badge { display:inline-block; font-weight:800; padding:4px 12px; border-radius:20px; background:#150f22; } .bar { height:14px; background:#150f22; border-radius:8px; position:relative; margin:12px 0 6px; overflow:hidden; } .bar i.f { position:absolute; left:0; top:0; bottom:0; background:#c26be0; } .bar i.n { position:absolute; top:0; bottom:0; width:3px; background:#fff; }
+  .seg { display:inline-block; height:22px; background:#c26be0; border-radius:4px; margin:2px 2px 2px 0; vertical-align:middle; } .seg.last { background:#7e3aa8; } .chip { display:inline-block; font-family:monospace; background:#150f22; border-radius:6px; padding:2px 8px; margin:2px 4px 2px 0; font-size:16px; }
+</style><style>.rev{font-family:monospace;font-size:15px;background:#150f22;border-radius:8px;padding:10px;white-space:pre-wrap;word-break:break-word;line-height:2} .hid{background:#7e3aa8;color:#fff;border-radius:4px;padding:1px 5px;font-size:11px;margin:0 1px} .hid.bad{background:#c0392b} .hid.look{background:#b9770e} .badge.suspicious{color:#ff9c8a} .badge.check{color:#fbbf24} .badge.clean{color:#86efac} .scroll{max-height:260px;overflow:auto} .f{padding:6px 0;border-bottom:1px solid #3a2f4d;font-size:14px}</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Utf<span>Lens</span></h1>
+  <div class="sub">Paste text and see what is really in it: hidden characters, direction overrides, lookalike letters, and the exact bytes.</div>
+  <div class="card">
+    <label>Text to inspect</label>
+    <textarea id="t" spellcheck="false"></textarea>
+    <button id="p1">Trojan Source</button><button id="p2">Lookalike domain</button><button id="p3">Pasted from a doc</button><button id="p4">Emoji family</button><button id="p5">Clean text</button><button id="cl">Clean it</button>
+    <div id="res" style="margin-top:12px"></div>
+  </div>
+  <div class="card"><h2 style="margin:0 0 8px;font-size:15px">Revealed</h2><div id="rev" class="rev"></div><div class="note">Purple: hidden or odd spaces. Red: direction controls, control characters, lone surrogates. Amber: letters from another script inside a Latin word.</div></div>
+  <div class="card"><h2 style="margin:0 0 8px;font-size:15px">Findings</h2><div id="fnd"></div></div>
+  <div class="card"><h2 style="margin:0 0 8px;font-size:15px">Code points</h2><div class="scroll"><table id="tbl"></table></div></div>
+  <div class="note">Direction controls: the nine code points (U+202A to U+202E and U+2066 to U+2069) that the Rust advisory for CVE-2021-42574 says to search for, which can make source code read differently than it compiles. Byte counts follow UTF-8 as encoded by the browser; a lone surrogate counts as the 3-byte replacement character. Scripts and categories come from the browser's Unicode property data. The lookalike list is a small hand-picked set of Cyrillic and Greek letters, not the full Unicode confusables table, so a clean verdict does not prove a string is safe. "Clean it" drops direction controls, control characters, lone surrogates and zero-width characters (it keeps joiners used in emoji sequences), turns odd spaces into plain spaces and normalizes to NFC. Runs in your browser, nothing stored.</div>
+</div>
+<script src="engine.js"></script>
+<script>
+(function () {
+  var U = window.UtfLens, $ = function (i) { return document.getElementById(i); };
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+  var P = {
+    p1: 'if access_level != "user\u202E \u2066// Check if admin\u2069 \u2066" {',
+    p2: 'Sign in at p\u0430ypal.com or \u0430pple.com',
+    p3: 'Quarterly\u00a0report\u200b final\ufeff draft',
+    p4: 'Family: \u{1F468}\u200D\u{1F469}\u200D\u{1F467} and flag \u{1F1EE}\u{1F1F1} and cafe\u0301',
+    p5: 'Hello, world.'
+  };
+  Object.keys(P).forEach(function (k) { $(k).onclick = function () { $('t').value = P[k]; run(); }; });
+  function kindClass(it) { var k = it.flags.map(function (f) { return f.kind; }); if (k.indexOf('bidi') >= 0 || k.indexOf('control') >= 0 || k.indexOf('lone-surrogate') >= 0) return 'hid bad'; if (k.length) return 'hid'; return ''; }
+  function run() {
+    var text = $('t').value, a = U.analyze(text), i;
+    var label = { suspicious: 'Suspicious', check: 'Worth a look', clean: 'Clean', empty: 'Nothing to inspect' }[a.verdict];
+    $('res').innerHTML = '<span class="badge ' + a.verdict + '">' + label + '</span>' +
+      '<div class="stats"><div><b>' + a.codePoints + '</b><span class="muted">code points</span></div><div><b>' + a.graphemes + '</b><span class="muted">characters you see</span></div><div><b>' + a.utf16Units + '</b><span class="muted">UTF-16 units</span></div><div><b>' + a.utf8Bytes + '</b><span class="muted">UTF-8 bytes</span></div></div>' +
+      (a.nfc.same ? '' : '<div class="muted" style="margin-top:8px">Not in NFC form: ' + a.nfdLength + ' code points decomposed, ' + a.nfcLength + ' composed. Two strings that look the same can differ in bytes.</div>');
+    var rev = '', f = '', rows = '';
+    a.items.forEach(function (it) {
+      var cls = kindClass(it), mixedLook = it.look && a.mixed.some(function (m) { return m.odd.indexOf(it.hex) >= 0 && it.index >= m.at && m.word.indexOf(it.ch) >= 0 && m.odd.length; });
+      if (cls) rev += '<span class="' + cls + '">' + it.hex + '</span>';
+      else if (it.look && mixedLook) rev += '<span class="hid look">' + esc(it.ch) + ' ' + it.hex + '</span>';
+      else rev += esc(it.ch);
+      it.flags.forEach(function (fl) { f += '<div class="f"><b>' + it.hex + '</b> at position ' + it.index + ': ' + fl.name.toLowerCase() + ' <span class="muted">(' + fl.kind + ')</span></div>'; });
+      if (it.index < 300) rows += '<tr><td class="m">' + (it.ch === '\n' ? '\\n' : it.flags.length ? '' : esc(it.ch)) + '</td><td class="m">' + it.hex + '</td><td class="m">' + it.bytes.map(function (b) { return (b < 16 ? '0' : '') + b.toString(16).toUpperCase(); }).join(' ') + '</td><td>' + it.category + (it.script ? ' / ' + it.script : '') + '</td></tr>';
+    });
+    a.mixed.forEach(function (m) { if (m.scripts.length > 1) f += '<div class="f">Word <b>' + esc(m.word) + '</b> mixes ' + m.scripts.join(' + ') + (m.odd.length ? ' - non-Latin letters: ' + m.odd.join(', ') + ' (can pass for Latin)' : ' <span class="muted">(common in some languages)</span>') + '</div>'; });
+    $('rev').innerHTML = rev || '<span class="muted">-</span>';
+    $('fnd').innerHTML = f || '<span class="muted">Nothing hidden found.</span>';
+    $('tbl').innerHTML = rows ? '<tr><th>Char</th><th>Code point</th><th>UTF-8 bytes</th><th>Category / script</th></tr>' + rows + (a.codePoints > 300 ? '<tr><td colspan="4" class="muted">First 300 of ' + a.codePoints + ' shown.</td></tr>' : '') : '';
+  }
+  $('t').oninput = run;
+  $('cl').onclick = function () { $('t').value = U.clean($('t').value); run(); };
+  $('t').value = P.p1; run();
+})();
+</script>
+</body>
+</html>
