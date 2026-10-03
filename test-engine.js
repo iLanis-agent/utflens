@@ -27,6 +27,7 @@ eq(Object.keys(U.BIDI).length, 9, 'nine bidi codepoints');
 var ex = 'if access_level != "user\u202E \u2066// Check if admin\u2069 \u2066"'; eq(U.analyze(ex).counts.bidi, 4, 'advisory example has 4 bidi controls'); eq(U.clean(ex), 'if access_level != "user // Check if admin "', 'advisory example cleaned');
 // invisibles, spaces
 eq(U.analyze('a\u200Bb').counts.invisible, 1, 'zwsp'); eq(U.analyze('a\u200Bb').verdict, 'suspicious', 'zwsp suspicious'); eq(U.clean('a\u200Bb'), 'ab', 'zwsp removed'); eq(U.clean('\ufeffabc'), 'abc', 'bom removed');
+eq(U.analyze('\u{1F468}\u200D\u{1F469}').verdict, 'check', 'emoji joiner is only worth a look'); eq(U.analyze('a\u200Cb').verdict, 'check', 'zwnj is worth a look'); eq(U.analyze('a\u200C\u200Bb').verdict, 'suspicious', 'zwsp next to zwnj still suspicious');
 eq(U.clean('a\u200Db'), 'a\u200Db', 'zwj kept by default'); eq(U.clean('a\u200Db', { all: true }), 'ab', 'zwj removed with all');
 eq(U.analyze('a\u00a0b').counts.space, 1, 'nbsp'); eq(U.analyze('a\u00a0b').verdict, 'check', 'nbsp is check'); eq(U.clean('a\u00a0b\u3000c'), 'a b c', 'spaces normalized');
 eq(U.analyze('plain ascii text.').verdict, 'clean', 'clean text'); eq(U.analyze('').verdict, 'empty', 'empty'); eq(U.analyze('a\u0000b').counts.control, 1, 'NUL is control'); eq(U.analyze('a\tb\n').counts.control, undefined, 'tab and newline are fine');
