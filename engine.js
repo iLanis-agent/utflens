@@ -71,10 +71,11 @@
     items.forEach(function (it) { bytes += it.bytes.length; it.flags.forEach(function (f) { bad[f.kind] = (bad[f.kind] || 0) + 1; }); });
     var mixed = mixedWords(items);
     var nfc = text.normalize('NFC'), nfd = text.normalize('NFD');
-    var risky = (bad.bidi || 0) + (bad.invisible || 0) + (bad.control || 0) + (bad['lone-surrogate'] || 0) + mixed.filter(function (m) { return m.odd.length; }).length;
+    var joiners = items.filter(function (it) { return it.cp === 0x200D || it.cp === 0x200C; }).length;
+    var risky = (bad.bidi || 0) + ((bad.invisible || 0) - joiners) + (bad.control || 0) + (bad['lone-surrogate'] || 0) + mixed.filter(function (m) { return m.odd.length; }).length;
     return { codePoints: items.length, utf16Units: text.length, utf8Bytes: bytes, graphemes: graphemes(text), items: items, counts: bad, mixed: mixed,
       nfc: { text: nfc, same: nfc === text }, nfdLength: Array.from(nfd).length, nfcLength: Array.from(nfc).length,
-      verdict: !text.length ? 'empty' : risky ? 'suspicious' : (bad.space || bad['bidi-mark'] || bad.private || bad.unassigned || !(nfc === text)) ? 'check' : 'clean' };
+      verdict: !text.length ? 'empty' : risky ? 'suspicious' : (joiners || bad.space || bad['bidi-mark'] || bad.private || bad.unassigned || !(nfc === text)) ? 'check' : 'clean' };
   }
   // clean: drops bidi controls, control characters, lone surrogates and invisibles; keeps ZWJ/ZWNJ (emoji sequences, Persian) unless o.all; turns odd spaces into a plain space
   function clean(text, o) {
