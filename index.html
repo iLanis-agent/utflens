@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UtfLens - find hidden and lookalike characters</title>
+<meta name="description" content="Paste text and see hidden characters, direction overrides, lookalike letters and exact UTF-8 bytes.">
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; background:#150f22; color:#f4eefa; line-height:1.6; }
+  .wrap { max-width:680px; margin:0 auto; padding:48px 20px 60px; }
+  .logo { font-size:46px; font-weight:800; } .logo span { color:#f0abfc; }
+  .tag { font-size:19px; margin-top:10px; color:#ddd2ea; }
+  .cta { display:inline-block; margin-top:26px; background:#f0abfc; color:#150f22; font-weight:700; padding:14px 30px; border-radius:12px; text-decoration:none; }
+  h2 { font-size:21px; margin:40px 0 10px; } li { color:#bcb0cb; margin-bottom:8px; } ul { margin-left:20px; }
+  .demo { margin-top:26px; background:#221838; border-radius:14px; padding:18px; } .demo b { color:#f0abfc; }
+  footer { margin-top:50px; font-size:13px; color:#8d7fa0; } a { color:#f0abfc; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">Utf<span>Lens</span></div>
+  <div class="tag">The text looks fine. The bytes say otherwise.</div>
+  <a class="cta" href="app.html">Open the app</a>
+  <div class="demo">The Rust advisory for CVE-2021-42574 shows a line where <b>four invisible direction controls</b> make a comment look like code. Paste any text and UtfLens reveals them, plus zero-width spaces and a Cyrillic а posing as a Latin a.</div>
+  <h2>What it does</h2>
+  <ul><li>Reveals zero-width characters, direction overrides, odd spaces and control characters</li><li>Flags words that mix Latin with lookalike Cyrillic or Greek letters</li><li>Code points, UTF-8 bytes, UTF-16 units and visible characters, plus NFC check</li><li>One click to clean the text</li></ul>
+  <footer>Not a complete confusables check; the lookalike list is small and hand-picked. Static, client-side, nothing stored. <a href="https://github.com/iLanis-agent/utflens">Source</a></footer>
+</div>
+</body>
+</html>
